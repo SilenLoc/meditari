@@ -18,7 +18,7 @@ lazy_static! {
 
 pub fn reset(owner: String) {
     let shell = new_dir_and_pull(owner);
-    if let Err(_) = cmd!(shell, "{GIT} rm -r *.md").quiet().run() {
+    if cmd!(shell, "{GIT} rm -r *.md").quiet().run().is_err() {
         eprintln!("no markdown files found to delete");
         exit(1)
     };
@@ -63,6 +63,12 @@ pub fn new_dir_and_pull(owner: String) -> Shell {
 
     // we can now always change into REPO dir
     home_sh.change_dir(REPO);
+
+    cmd!(home_sh, "{GIT} checkout main -q")
+        .ignore_stdout()
+        .quiet()
+        .run()
+        .unwrap();
 
     // always pull, if a change happend it will always be in a different file if done by stoic
     if cmd!(home_sh, "{GIT} pull -q")
@@ -136,7 +142,7 @@ pub fn revert(owner: String) {
     clean_commit_tree(&stoic_shell, Some("revert".to_string()));
 }
 
-pub fn note(owner: String, editor_command: String) {
+pub fn note(owner: String, editor_command: String, content: Option<String>) {
     let stoic_shell = new_dir_and_pull(owner);
 
     clean_commit_tree(&stoic_shell, None);
@@ -169,12 +175,18 @@ pub fn note(owner: String, editor_command: String) {
 
     let full_file_path = format!("{current}/{file_name}");
 
-    cmd!(stoic_shell, "ghostty -e {editor_command} {full_file_path}")
-        .quiet()
-        .ignore_stderr()
-        .ignore_stdout()
-        .run()
-        .unwrap();
+    if let Some(content) = content {
+        stoic_shell
+            .write_file(&file_name, content.as_bytes())
+            .unwrap();
+    } else {
+        cmd!(stoic_shell, "ghostty -e {editor_command} {full_file_path}")
+            .quiet()
+            .ignore_stderr()
+            .ignore_stdout()
+            .run()
+            .unwrap();
+    }
 
     if let Ok(content) = stoic_shell.read_file(&file_name) {
         if !content.is_empty() {
@@ -232,7 +244,7 @@ fn date() -> StoicDate {
 
     let x = readable.to_string();
     let split = x.split("T").collect::<Vec<&str>>();
-    let rest = split[1];
+    let rest = split[1].replace(".", "_");
 
     let year_month_day = split[0];
     let split = year_month_day.split("-").collect::<Vec<&str>>();

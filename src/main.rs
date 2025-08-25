@@ -23,6 +23,10 @@ enum Commands {
     Reset {},
     Test {},
     Revert {},
+    Content {
+        #[arg()]
+        content: String,
+    },
 }
 
 fn main() {
@@ -41,8 +45,11 @@ fn main() {
         Some(Commands::Revert {}) => {
             stoic::revert(owner);
         }
+        Some(Commands::Content { content }) => {
+            stoic::note(owner, editor_command, Some(content.to_string()));
+        }
         None => {
-            stoic::note(owner, editor_command);
+            stoic::note(owner, editor_command, None);
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::process::exit;
 
-use xshell::{cmd, Shell};
+use xshell::{Shell, cmd};
 
 use crate::base;
 
