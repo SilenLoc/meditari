@@ -16,6 +16,25 @@ lazy_static! {
     static ref TWO_HOURS: Duration = Duration::from_secs(3600 * 2);
 }
 
+pub fn reset(owner: String) {
+    let shell = new_dir_and_pull(owner);
+    if let Err(_) = cmd!(shell, "{GIT} rm -r *.md").quiet().run() {
+        eprintln!("no markdown files found to delete");
+        exit(1)
+    };
+    clean_commit_tree(&shell, Some("reset all".to_string()));
+    println!("you may revert this by running revert")
+}
+
+pub fn add_test_file_and_reset(owner: String) {
+    let shell = new_dir_and_pull(owner.clone());
+    let file_path = format!("{}/test_file.md", shell.current_dir().to_str().unwrap());
+    shell.write_file(file_path, "test contents").unwrap();
+    cmd!(&shell, "ls").run().unwrap();
+    clean_commit_tree(&shell, Some("test commit".to_string()));
+    reset(owner);
+}
+
 pub fn new_dir_and_pull(owner: String) -> Shell {
     let Some(home_dir) = home_dir() else {
         //tried to reach home dir
@@ -29,9 +48,13 @@ pub fn new_dir_and_pull(owner: String) -> Shell {
     home_sh.change_dir(home_dir);
 
     // check for repo
-    if cmd!(home_sh, "cd {REPO}").run().is_err() {
+    if cmd!(home_sh, "cd {REPO}").quiet().run().is_err() {
         // clone inside home if error
-        if let Err(err) = cmd!(home_sh, "{GIT} clone {REMOTE}/{owner}/{REPO}").run() {
+        if let Err(err) = cmd!(home_sh, "{GIT} clone {REMOTE}/{owner}/{REPO}")
+            .quiet()
+            .ignore_stdout()
+            .run()
+        {
             eprintln!("tried to clone {REPO}, maybe it does not exist?");
             eprintln!("{err}");
             exit(1);
@@ -40,67 +63,165 @@ pub fn new_dir_and_pull(owner: String) -> Shell {
 
     // we can now always change into REPO dir
     home_sh.change_dir(REPO);
-    cmd!(home_sh, "pwd").run().unwrap();
 
     // always pull, if a change happend it will always be in a different file if done by stoic
-    if cmd!(home_sh, "{GIT} pull").run().is_err() {
-        cmd!(home_sh, "touch README.md").run().unwrap();
-        cmd!(home_sh, "{GIT} add .").run().unwrap();
-        cmd!(home_sh, "{GIT} commit -m initial").run().unwrap();
-        cmd!(home_sh, "{GIT} push").run().unwrap();
+    if cmd!(home_sh, "{GIT} pull -q")
+        .ignore_stdout()
+        .quiet()
+        .run()
+        .is_err()
+    {
+        cmd!(home_sh, "touch README.md")
+            .ignore_stdout()
+            .quiet()
+            .run()
+            .unwrap();
+        cmd!(home_sh, "{GIT} add . -q")
+            .ignore_stdout()
+            .quiet()
+            .run()
+            .unwrap();
+        cmd!(home_sh, "{GIT} commit -m initial")
+            .quiet()
+            .ignore_stdout()
+            .run()
+            .unwrap();
+        cmd!(home_sh, "{GIT} push")
+            .quiet()
+            .ignore_stdout()
+            .run()
+            .unwrap();
     };
 
     home_sh
 }
 
 pub fn clean_commit_tree(shell: &Shell, commit_message: Option<String>) {
-    let status = cmd!(shell, "{GIT} status").read().unwrap();
+    let status = cmd!(shell, "{GIT} status").quiet().read().unwrap();
     if status.contains("nothing to commit, working tree clean") {
+        cmd!(shell, "{GIT} push -q")
+            .quiet()
+            .ignore_status()
+            .ignore_stdout()
+            .read()
+            .unwrap();
         return;
     }
 
     let msg = commit_message.unwrap_or("some_left_over_change".to_string());
-    cmd!(shell, "{GIT} add .").run().unwrap();
-    cmd!(shell, "{GIT} commit -m {msg}").run().unwrap();
-    cmd!(shell, "{GIT} push").run().unwrap();
+    cmd!(shell, "{GIT} add .")
+        .quiet()
+        .ignore_stdout()
+        .run()
+        .unwrap();
+    if let Err(err) = cmd!(shell, "{GIT} commit -m {msg}")
+        .quiet()
+        .ignore_stdout()
+        .run()
+    {
+        eprintln!("{err}");
+        exit(1)
+    }
+
+    cmd!(shell, "{GIT} push -q")
+        .quiet()
+        .ignore_stdout()
+        .run()
+        .unwrap();
+}
+
+pub fn revert(owner: String) {
+    let stoic_shell = new_dir_and_pull(owner);
+    git::revert_last_commit(&stoic_shell);
+    clean_commit_tree(&stoic_shell, Some("revert".to_string()));
 }
 
 pub fn note(owner: String, editor_command: String) {
     let stoic_shell = new_dir_and_pull(owner);
+
     clean_commit_tree(&stoic_shell, None);
 
-    let file_name = file_name();
+    let date = date();
+    let file_name = file_name(&date);
 
-    if let Err(err) = cmd!(stoic_shell, "touch {file_name}").run() {
+    let dir_name = format!("{}/{}/{}", date.year(), date.month(), date.day());
+
+    if !stoic_shell.path_exists(&dir_name) {
+        if let Err(err) = stoic_shell.create_dir(&dir_name) {
+            eprintln!("{err}");
+            exit(1);
+        };
+    }
+
+    stoic_shell.change_dir(&dir_name);
+
+    if let Err(err) = cmd!(stoic_shell, "touch {file_name}")
+        .quiet()
+        .ignore_stdout()
+        .run()
+    {
         eprintln!("Could not create {file_name}");
         eprintln!("{err}");
         exit(1);
     }
     let current = stoic_shell.current_dir();
     let current = current.to_str().unwrap();
-    println!("command {editor_command} {current}/{file_name}");
-    cmd!(
-        stoic_shell,
-        "ghostty -e {editor_command} {current}/{file_name}"
-    )
-    .quiet()
-    .ignore_stderr()
-    .ignore_stdout()
-    .run()
-    .unwrap();
 
-    clean_commit_tree(&stoic_shell, Some(file_name));
+    let full_file_path = format!("{current}/{file_name}");
+
+    cmd!(stoic_shell, "ghostty -e {editor_command} {full_file_path}")
+        .quiet()
+        .ignore_stderr()
+        .ignore_stdout()
+        .run()
+        .unwrap();
+
+    if let Ok(content) = stoic_shell.read_file(&file_name) {
+        if !content.is_empty() {
+            let mut preview = content.clone();
+            preview.truncate(30);
+            let line_count = content.lines().count();
+            let preview_line_count = preview.lines().count();
+            let rest_line_count = line_count - preview_line_count;
+            println!(
+                "Commiting {preview}...
+[{rest_line_count} more Lines]"
+            );
+            clean_commit_tree(&stoic_shell, Some(file_name));
+        } else {
+            println!("No content in the file, nothing to commit");
+            if let Err(err) = stoic_shell.remove_path(&file_name) {
+                eprintln!("Could not delete file {err}");
+                exit(1);
+            };
+        }
+    };
 }
 
-fn file_name() -> String {
-    let date = date();
-    format!("{}_{}.md", date.day, date.hour)
+fn file_name(date: &StoicDate) -> String {
+    format!("{}_{}_{}_{}.md", date.year, date.month, date.day, date.rest)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct StoicDate {
+    year: String,
+    month: String,
     day: String,
-    hour: String,
+    rest: String,
+}
+
+impl StoicDate {
+    fn year(&self) -> String {
+        self.year.clone()
+    }
+
+    fn month(&self) -> String {
+        self.month.clone()
+    }
+
+    fn day(&self) -> String {
+        self.day.clone()
+    }
 }
 
 fn date() -> StoicDate {
@@ -111,12 +232,19 @@ fn date() -> StoicDate {
 
     let x = readable.to_string();
     let split = x.split("T").collect::<Vec<&str>>();
-    let day = split[0];
-    let hour = split[1];
+    let rest = split[1];
+
+    let year_month_day = split[0];
+    let split = year_month_day.split("-").collect::<Vec<&str>>();
+    let year = split[0];
+    let month = split[1];
+    let day = split[2];
 
     StoicDate {
         day: day.to_string(),
-        hour: hour.to_string(),
+        month: month.to_string(),
+        year: year.to_string(),
+        rest: rest.to_string(),
     }
 }
 
@@ -126,7 +254,7 @@ mod tests {
 
     #[test]
     pub fn should_create_readable_time() {
-        let _ = date();
+        let _date = date();
         println!("Should be able to create date")
     }
 }

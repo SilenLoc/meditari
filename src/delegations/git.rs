@@ -1,6 +1,6 @@
 use std::process::exit;
 
-use xshell::cmd;
+use xshell::{cmd, Shell};
 
 use crate::base;
 
@@ -13,4 +13,8 @@ pub fn get_username() -> String {
     };
     eprintln!("Could not get user name with git");
     exit(1);
+}
+
+pub fn revert_last_commit(shell: &Shell) {
+    cmd!(shell, "git revert HEAD --no-edit").run().unwrap();
 }

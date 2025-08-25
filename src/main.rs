@@ -20,7 +20,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    Reset {},
     Test {},
+    Revert {},
 }
 
 fn main() {
@@ -30,7 +32,15 @@ fn main() {
     let editor_command = cli.editor.unwrap_or(editor::find_editor());
 
     match &cli.command {
-        Some(Commands::Test {}) => {}
+        Some(Commands::Test {}) => {
+            stoic::add_test_file_and_reset(owner);
+        }
+        Some(Commands::Reset {}) => {
+            stoic::reset(owner);
+        }
+        Some(Commands::Revert {}) => {
+            stoic::revert(owner);
+        }
         None => {
             stoic::note(owner, editor_command);
         }
