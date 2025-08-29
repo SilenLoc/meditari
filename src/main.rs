@@ -34,6 +34,7 @@ fn main() {
 
     let owner = cli.owner.unwrap_or(git::get_username());
     let editor_command = cli.editor.unwrap_or(editor::find_editor());
+
     match &cli.command {
         Some(Commands::Test {}) => {
             // only to see if the cli actually runs
