@@ -24,3 +24,6 @@ fmt:
     cargo fmt
     cargo fix --allow-dirty
     __CARGO_FIX_YOLO=1 cargo clippy --fix --allow-dirty
+
+install:
+    cargo install --path .

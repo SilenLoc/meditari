@@ -51,7 +51,6 @@ pub fn note(owner: String, editor_command: String, content: Option<String>) {
             .unwrap();
     } else {
         cmd!(stoic_shell, "ghostty -e {editor_command} {full_file_path}")
-            .quiet()
             .ignore_stderr()
             .ignore_stdout()
             .run()
