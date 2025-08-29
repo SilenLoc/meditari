@@ -20,6 +20,9 @@ lint:
     cargo fmt --all --check
     cargo clippy -- -Dwarnings
 
+install:
+    cargo install --path .
+
 fmt:
     cargo fmt
     cargo fix --allow-dirty
