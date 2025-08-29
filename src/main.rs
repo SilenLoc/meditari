@@ -37,7 +37,7 @@ fn main() {
 
     match &cli.command {
         Some(Commands::Test {}) => {
-            stoic::add_test_file_and_reset(owner);
+            // only to see if the cli actually runs
         }
         Some(Commands::Reset {}) => {
             stoic::reset(owner);

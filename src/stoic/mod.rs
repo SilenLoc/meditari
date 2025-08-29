@@ -26,15 +26,6 @@ pub fn reset(owner: String) {
     println!("you may revert this by running revert")
 }
 
-pub fn add_test_file_and_reset(owner: String) {
-    let shell = new_dir_and_pull(owner.clone());
-    let file_path = format!("{}/test_file.md", shell.current_dir().to_str().unwrap());
-    shell.write_file(file_path, "test contents").unwrap();
-    cmd!(&shell, "ls").run().unwrap();
-    clean_commit_tree(&shell, Some("test commit".to_string()));
-    reset(owner);
-}
-
 pub fn new_dir_and_pull(owner: String) -> Shell {
     let Some(home_dir) = home_dir() else {
         //tried to reach home dir
