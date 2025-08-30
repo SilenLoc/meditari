@@ -1,3 +1,4 @@
+use chrono::Utc;
 use lazy_static::lazy_static;
 use std::time::{Duration, SystemTime};
 
@@ -24,6 +25,9 @@ impl StoicDate {
 
     pub fn day(&self) -> String {
         self.day.clone()
+    }
+    pub fn as_system_time(&self) -> chrono::NaiveDate {
+        chrono::NaiveDate::from_ymd_opt(self.year.parse().unwrap(), self.month.parse().unwrap(), self.day.parse().unwrap()).unwrap()
     }
 }
 

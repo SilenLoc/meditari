@@ -1,6 +1,9 @@
+use crate::stoic::{display, entries};
+
 
 
 
 pub fn daily_summary(owner: String) {
-    todo!("Actually implement daily summary");
+    let entries = entries::collect_all_entries(owner);
+    display::simple_markdown(entries);
 }
