@@ -2,11 +2,14 @@ use std::{env::home_dir, process::exit};
 
 use xshell::{Shell, cmd};
 
-use crate::{base, delegations::git};
+use crate::{
+    base,
+    delegations::{gh, git},
+};
 
 const REPO: &str = "stoic";
 const GIT: &str = git::GIT;
-const REMOTE: &str = "https://github.com";
+const REMOTE: &str = gh::REMOTE;
 
 pub fn stoic_shell(owner: String) -> Shell {
     let Some(home_dir) = home_dir() else {

@@ -1,12 +1,17 @@
 use std::process::exit;
 use xshell::cmd;
 
-mod date;
-use date::{date, file_name};
+//commands
 mod revert;
 pub use revert::revert;
 mod reset;
 pub use reset::reset;
+mod browse;
+pub use browse::open_repo;
+
+//base
+mod date;
+use date::{date, file_name};
 mod commit;
 use commit::commit_all;
 mod init;

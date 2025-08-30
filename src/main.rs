@@ -23,6 +23,7 @@ enum Commands {
     Reset {},
     Test {},
     Revert {},
+    Browse {},
     Content {
         #[arg()]
         content: String,
@@ -47,6 +48,9 @@ fn main() {
         }
         Some(Commands::Content { content }) => {
             stoic::note(owner, editor_command, Some(content.to_string()));
+        }
+        Some(Commands::Browse {}) => {
+            stoic::open_repo(owner);
         }
         None => {
             stoic::note(owner, editor_command, None);
