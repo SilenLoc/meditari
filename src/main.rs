@@ -24,6 +24,7 @@ enum Commands {
     Test {},
     Revert {},
     Browse {},
+    RemoveEmpty {},
     Content {
         #[arg()]
         content: String,
@@ -45,6 +46,9 @@ fn main() {
         }
         Some(Commands::Revert {}) => {
             stoic::revert(owner);
+        }
+        Some(Commands::RemoveEmpty {}) => {
+            stoic::remove_empty_files(owner);
         }
         Some(Commands::Content { content }) => {
             stoic::note(owner, editor_command, Some(content.to_string()));

@@ -8,6 +8,8 @@ mod reset;
 pub use reset::reset;
 mod browse;
 pub use browse::open_repo;
+mod empty_files;
+pub use empty_files::remove_empty_files;
 
 //base
 mod date;
