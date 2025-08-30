@@ -10,6 +10,8 @@ mod browse;
 pub use browse::open_repo;
 mod empty_files;
 pub use empty_files::remove_empty_files;
+mod daily_summary;
+pub use daily_summary::daily_summary;
 
 //base
 mod date;

@@ -1,3 +1,5 @@
+use std::iter::Sum;
+
 use clap::{Parser, Subcommand, command};
 
 use crate::delegations::{editor, git};
@@ -29,6 +31,7 @@ enum Commands {
         #[arg()]
         content: String,
     },
+    Sum {},
 }
 
 fn main() {
@@ -55,6 +58,9 @@ fn main() {
         }
         Some(Commands::Browse {}) => {
             stoic::open_repo(owner);
+        }
+        Some(Commands::Sum {}) => {
+            stoic::daily_summary(owner);
         }
         None => {
             stoic::note(owner, editor_command, None);
