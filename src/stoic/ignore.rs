@@ -3,7 +3,7 @@ use std::io::Write;
 
 use xshell::Shell;
 
-pub fn ignore_pattern(shell: Shell, patters: [&str; 32]) {
+pub fn ignore_pattern(shell: Shell, patters: [&str; 1]) {
     let file_exists = shell.path_exists(".gitignore");
     if !file_exists {
         let current_dir = shell.current_dir();

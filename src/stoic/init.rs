@@ -76,7 +76,7 @@ pub fn stoic_shell(owner: String) -> Shell {
             .unwrap();
     };
 
-    ignore::ignore_pattern(home_sh.clone(), ["*_day.md"; 32]);
+    ignore::ignore_pattern(home_sh.clone(), ["*_day.md"]);
 
     home_sh
 }
