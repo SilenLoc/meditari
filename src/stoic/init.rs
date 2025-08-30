@@ -5,6 +5,7 @@ use xshell::{Shell, cmd};
 use crate::{
     base,
     delegations::{gh, git},
+    stoic::ignore,
 };
 
 const REPO: &str = "stoic";
@@ -74,6 +75,8 @@ pub fn stoic_shell(owner: String) -> Shell {
             .run()
             .unwrap();
     };
+
+    ignore::ignore_pattern(home_sh.clone(), ["*_day.md"; 32]);
 
     home_sh
 }

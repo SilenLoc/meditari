@@ -18,6 +18,7 @@ mod commit;
 use commit::commit_all;
 mod init;
 use init::stoic_shell;
+mod ignore;
 
 pub fn note(owner: String, editor_command: String, content: Option<String>) {
     let stoic_shell = stoic_shell(owner);
